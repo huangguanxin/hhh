@@ -422,6 +422,28 @@ body {
 }
 
 /* ============================================================
+   分类筛选 + 分页 + 搜索 + 加载状态
+   ============================================================ */
+.category-bar { display: flex; align-items: center; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
+.btn-category { padding: 6px 16px; border: 1px solid var(--border); background: #fff; border-radius: 20px; font-size: 13px; cursor: pointer; transition: all .2s; color: var(--text-light); }
+.btn-category:hover { border-color: var(--primary); color: var(--primary); }
+.btn-category.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+.search-box { display: flex; margin-left: auto; gap: 0; }
+.search-input { padding: 6px 12px; border: 1px solid var(--border); border-right: none; border-radius: 20px 0 0 20px; font-size: 13px; outline: none; width: 160px; }
+.search-input:focus { border-color: var(--primary); }
+.btn-search { padding: 6px 14px; background: var(--primary); color: #fff; border: none; border-radius: 0 20px 20px 0; cursor: pointer; font-size: 13px; }
+.loading-box { text-align: center; padding: 60px 20px; color: var(--text-light); }
+.spinner { width: 36px; height: 36px; border: 3px solid var(--border); border-top-color: var(--primary); border-radius: 50%; margin: 0 auto 12px; animation: spin .8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.error-box { text-align: center; padding: 60px 20px; color: var(--text-light); }
+.pagination { display: flex; align-items: center; justify-content: center; gap: 6px; margin-top: 24px; flex-wrap: wrap; }
+.page-btn { padding: 6px 14px; border: 1px solid var(--border); background: #fff; border-radius: 6px; font-size: 13px; cursor: pointer; transition: all .2s; }
+.page-btn:hover:not(:disabled) { border-color: var(--primary); color: var(--primary); }
+.page-btn.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+.page-btn:disabled { opacity: .4; cursor: not-allowed; }
+.page-info { font-size: 13px; color: var(--text-light); margin-left: 12px; }
+
+/* ============================================================
    购物车页 (Cart)
    ============================================================ */
 .cart-empty {

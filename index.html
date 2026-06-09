@@ -90,24 +90,89 @@
     </div>
   </script>
 
-  <!-- 全部商品模板 -->
+  <!-- 全部商品模板（异步分页 + 分类筛选） -->
   <script type="text/x-template" id="tpl-products">
     <div class="container">
       <div class="section-title">📦 全部商品</div>
-      <div class="product-grid">
-        <div class="product-card" v-for="p in allProducts" :key="p.id">
-          <div class="product-img" :style="{ background: p.color }">{{ p.image }}</div>
-          <div class="product-info">
-            <div class="product-name">{{ p.name }}</div>
-            <div class="product-desc">{{ p.desc }}</div>
-            <div class="product-price"><span class="unit">¥</span>{{ p.price }}</div>
-            <div class="product-actions">
-              <router-link :to="'/product/' + p.id" class="btn-sm btn-detail">详情</router-link>
-              <button class="btn-sm btn-add" @click="addItem(p)">加入购物车</button>
+
+      <!-- 分类筛选栏 -->
+      <div class="category-bar">
+        <button
+          v-for="cat in categories"
+          :key="cat.key"
+          :class="['btn-category', { active: category === cat.key }]"
+          @click="selectCategory(cat.key)">
+          {{ cat.name }}
+        </button>
+
+        <!-- 搜索框 -->
+        <div class="search-box">
+          <input
+            type="text"
+            v-model="keyword"
+            placeholder="搜索商品..."
+            @keyup.enter="doSearch"
+            class="search-input">
+          <button class="btn-search" @click="doSearch">🔍</button>
+        </div>
+      </div>
+
+      <!-- 加载中 -->
+      <div class="loading-box" v-if="loading">
+        <div class="spinner"></div>
+        <p>正在加载...</p>
+      </div>
+
+      <!-- 错误提示 -->
+      <div class="error-box" v-else-if="error">
+        <p>😵 {{ error }}</p>
+        <button class="btn-home" @click="fetchProducts">重试</button>
+      </div>
+
+      <!-- 商品列表 -->
+      <template v-else>
+        <div class="product-grid" v-if="products.length > 0">
+          <div class="product-card" v-for="p in products" :key="p.id">
+            <div class="product-img" :style="{ background: p.color }">{{ p.image }}</div>
+            <div class="product-info">
+              <div class="product-name">{{ p.name }}</div>
+              <div class="product-desc">{{ p.desc }}</div>
+              <div class="product-price"><span class="unit">¥</span>{{ p.price }}</div>
+              <div class="product-actions">
+                <router-link :to="'/product/' + p.id" class="btn-sm btn-detail">详情</router-link>
+                <button class="btn-sm btn-add" @click="addItem(p)">加入购物车</button>
+              </div>
             </div>
           </div>
         </div>
-      </div>
+
+        <!-- 空结果 -->
+        <div class="cart-empty" v-else>
+          <div class="cart-empty-icon">📭</div>
+          <p>没有找到匹配的商品</p>
+        </div>
+
+        <!-- 分页控件 -->
+        <div class="pagination" v-if="totalPages > 1">
+          <button
+            class="page-btn"
+            :disabled="currentPage <= 1"
+            @click="goPage(currentPage - 1)">上一页</button>
+
+          <button
+            v-for="p in pageNumbers"
+            :key="p"
+            :class="['page-btn', { active: p === currentPage }]"
+            @click="goPage(p)">{{ p }}</button>
+
+          <button
+            class="page-btn"
+            :disabled="currentPage >= totalPages"
+            @click="goPage(currentPage + 1)">下一页</button>
+
+          <span class="page-info">共 {{ total }} 件 / {{ totalPages }} 页</span>
+        </div>
+      </template>
     </div>
   </script>
 
@@ -263,6 +328,8 @@
        ============================================================ -->
   <script src="js/data.js"></script>
   <script src="js/toast.js"></script>
+  <script src="js/utils/request.js"></script>
+  <script src="js/api/productApi.js"></script>
   <script src="js/store.js"></script>
   <script src="js/components/PromoLabel.js"></script>
   <script src="js/components/PromoCountdown.js"></script>
