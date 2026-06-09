@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>电商购物平台 — 优选商城</title>
+
+  <!-- 阶段 1: 全局样式 -->
+  <link rel="stylesheet" href="css/style.css">
+
+  <!-- 本地依赖：Vue 3 → VueDemi → Pinia 2 → Vue Router 4（离线可用） -->
+  <script src="js/vendor/vue.global.prod.js"></script>
+  <script src="js/vendor/vue-demi.iife.js"></script>
+  <script src="js/vendor/pinia.iife.prod.js"></script>
+  <script src="js/vendor/vue-router.global.prod.js"></script>
+</head>
+<body>
+  <!-- Vue 应用挂载点 -->
+  <div id="app"></div>
+
+  <!-- ============================================================
+       页面模板（x-template 必须在业务脚本之前定义）
+       ============================================================ -->
+
+  <!-- 根组件模板：导航栏 + Toast + 路由出口 -->
+  <script type="text/x-template" id="tpl-root">
+    <div>
+      <nav class="navbar">
+        <div class="logo" @click="$router.push('/')">🛒 优选商城</div>
+        <div class="nav-links">
+          <router-link to="/">首页</router-link>
+          <router-link to="/products">全部商品</router-link>
+          <router-link to="/cart" class="cart-badge">
+            🛒 购物车
+            <span class="cart-count" v-if="cartStore.totalCount > 0">
+              {{ cartStore.totalCount }}
+            </span>
+          </router-link>
+        </div>
+      </nav>
+
+      <div class="toast-container">
+        <div class="toast" v-for="(t, i) in toasts" :key="i">{{ t }}</div>
+      </div>
+
+      <router-view></router-view>
+    </div>
+  </script>
+
+  <!-- 首页模板 -->
+  <script type="text/x-template" id="tpl-home">
+    <div class="container">
+      <div class="hero">
+        <h1>🔥 优选好物 限时特惠</h1>
+        <p>全场满299包邮 · 新人首单立减20元 · 7天无理由退换</p>
+        <router-link to="/products" class="btn">立即抢购</router-link>
+      </div>
+      <div class="features">
+        <div class="feature-card">
+          <div class="icon">🚚</div>
+          <h3>极速配送</h3>
+          <p>全国次日达，部分城市当日达</p>
+        </div>
+        <div class="feature-card">
+          <div class="icon">🛡️</div>
+          <h3>正品保障</h3>
+          <p>100%正品承诺，假一赔十</p>
+        </div>
+        <div class="feature-card">
+          <div class="icon">💬</div>
+          <h3>专属客服</h3>
+          <p>7×24小时在线，随时为您服务</p>
+        </div>
+      </div>
+      <div class="section-title">🔥 热销爆款</div>
+      <div class="product-grid">
+        <div class="product-card" v-for="p in hotProducts" :key="p.id">
+          <div class="product-img" :style="{ background: p.color }">{{ p.image }}</div>
+          <div class="product-info">
+            <div class="product-name">{{ p.name }}</div>
+            <div class="product-desc">{{ p.desc }}</div>
+            <div class="product-price"><span class="unit">¥</span>{{ p.price }}</div>
+            <div class="product-actions">
+              <router-link :to="'/product/' + p.id" class="btn-sm btn-detail">详情</router-link>
+              <button class="btn-sm btn-add" @click="addItem(p)">加入购物车</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </script>
+
+  <!-- 全部商品模板 -->
+  <script type="text/x-template" id="tpl-products">
+    <div class="container">
+      <div class="section-title">📦 全部商品</div>
+      <div class="product-grid">
+        <div class="product-card" v-for="p in allProducts" :key="p.id">
+          <div class="product-img" :style="{ background: p.color }">{{ p.image }}</div>
+          <div class="product-info">
+            <div class="product-name">{{ p.name }}</div>
+            <div class="product-desc">{{ p.desc }}</div>
+            <div class="product-price"><span class="unit">¥</span>{{ p.price }}</div>
+            <div class="product-actions">
+              <router-link :to="'/product/' + p.id" class="btn-sm btn-detail">详情</router-link>
+              <button class="btn-sm btn-add" @click="addItem(p)">加入购物车</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </script>
+
+  <!-- 促销标签子组件模板 -->
+  <script type="text/x-template" id="tpl-promo-label">
+    <span :class="labelClass">{{ text }}</span>
+  </script>
+
+  <!-- 促销倒计时子组件模板 -->
+  <script type="text/x-template" id="tpl-promo-countdown">
+    <div class="promo-countdown">
+      <span class="countdown-icon">⏱</span>
+      <template v-if="!expired">
+        <span class="countdown-num">{{ String(hours).padStart(2, '0') }}</span>
+        <span class="countdown-sep">:</span>
+        <span class="countdown-num">{{ String(minutes).padStart(2, '0') }}</span>
+        <span class="countdown-sep">:</span>
+        <span class="countdown-num">{{ String(seconds).padStart(2, '0') }}</span>
+      </template>
+      <span v-else class="countdown-expired">促销已结束</span>
+    </div>
+  </script>
+
+  <!-- 商品详情模板 -->
+  <script type="text/x-template" id="tpl-detail">
+    <div class="container">
+      <div class="detail-card" v-if="product">
+        <div class="detail-img" :style="{ background: product.color }">{{ product.image }}</div>
+        <div class="detail-info">
+          <h2>{{ product.name }}</h2>
+          <p class="desc">{{ product.desc }}</p>
+          <!-- 子组件1: 促销标签 ← 父传子 type/text -->
+          <promo-label
+            v-if="product.promotion"
+            :type="product.promotion.type"
+            :text="product.promotion.text">
+          </promo-label>
+          <!-- 子组件2: 倒计时 ← 父传子 endTime -->
+          <promo-countdown
+            v-if="product.promotion"
+            :end-time="product.promotion.endTime">
+          </promo-countdown>
+          <p class="price"><span class="unit">¥</span>{{ product.price }}</p>
+          <div>
+            <button class="btn-large" @click="addItem" :disabled="added">
+              {{ added ? '✅ 已加入购物车' : '🛒 加入购物车' }}
+            </button>
+            <span class="added-tip" v-if="added">添加成功!</span>
+          </div>
+          <p style="margin-top:16px;color:var(--text-light);font-size:13px;">
+            📦 满299包邮 · 🔄 7天无理由退换 · 🛡️ 正品保障
+          </p>
+        </div>
+      </div>
+      <div class="not-found" v-else>
+        <div class="code-404">😢</div>
+        <h2>商品不存在</h2>
+        <p>该商品可能已下架或 ID 无效</p>
+        <router-link to="/products" class="btn-home">返回商品列表</router-link>
+      </div>
+    </div>
+  </script>
+
+  <!-- 购物车模板 -->
+  <script type="text/x-template" id="tpl-cart">
+    <div class="container">
+      <div class="section-title">🛒 我的购物车</div>
+      <div class="cart-empty" v-if="cartStore.isEmpty">
+        <div class="cart-empty-icon">🛒</div>
+        <p>购物车是空的，快去挑选好物吧~</p>
+        <router-link to="/products" class="btn-home">去逛逛</router-link>
+      </div>
+      <template v-else>
+        <div class="cart-list">
+          <div class="cart-item" v-for="item in cartStore.items" :key="item.id">
+            <div class="cart-item-img" :style="{ background: item.color }">{{ item.image }}</div>
+            <div class="cart-item-info">
+              <div class="cart-item-name">{{ item.name }}</div>
+              <div class="cart-item-price">单价: ¥{{ item.price }}</div>
+              <div class="cart-item-qty">
+                <button class="qty-btn" @click="cartStore.decreaseQty(item.id)">−</button>
+                <span>{{ item.quantity }}</span>
+                <button class="qty-btn" @click="cartStore.increaseQty(item.id)">+</button>
+              </div>
+            </div>
+            <div class="cart-item-total">¥{{ (item.price * item.quantity).toFixed(2) }}</div>
+            <button class="btn-remove" @click="removeItem(item)" title="删除">✕</button>
+          </div>
+        </div>
+        <div class="cart-summary">
+          <div class="cart-total">
+            合计: <span>¥{{ cartStore.totalPrice.toFixed(2) }}</span>
+            <div style="font-size:13px;color:var(--text-light);">
+              共 {{ cartStore.totalCount }} 件商品
+            </div>
+          </div>
+          <div class="cart-actions">
+            <button class="btn-clear" @click="clearCart">🗑️ 清空购物车</button>
+            <button class="btn-checkout" @click="checkout" :disabled="cartStore.isEmpty">
+              💳 立即结算
+            </button>
+          </div>
+        </div>
+      </template>
+    </div>
+  </script>
+
+  <!-- 下单成功页模板 -->
+  <script type="text/x-template" id="tpl-order-success">
+    <div class="container">
+      <div class="order-success">
+        <div class="check">✓</div>
+        <h2>🎉 下单成功!</h2>
+        <div class="order-id">订单编号: {{ orderId }}</div>
+        <div class="amount">实付金额: <span>¥{{ amount }}</span></div>
+        <p style="color:var(--text-light);margin-bottom:8px;">
+          我们将尽快为您发货，请留意物流信息~
+        </p>
+        <p class="countdown">{{ countdown }} 秒后自动跳转至首页</p>
+        <div style="display:flex;gap:12px;justify-content:center;">
+          <router-link to="/"
+            class="btn-home"
+            style="background:#fff;color:var(--text);border:1px solid var(--border);">
+            返回首页
+          </router-link>
+          <router-link to="/products" class="btn-home">继续购物</router-link>
+        </div>
+      </div>
+    </div>
+  </script>
+
+  <!-- 404 页面模板 -->
+  <script type="text/x-template" id="tpl-404">
+    <div class="container">
+      <div class="not-found">
+        <div class="code-404">404</div>
+        <h2>😵 页面未找到</h2>
+        <p>您访问的页面不存在，可能已被移除或地址输入有误</p>
+        <p class="countdown">{{ countdown }} 秒后自动返回首页</p>
+        <router-link to="/" class="btn-home">返回首页</router-link>
+      </div>
+    </div>
+  </script>
+
+  <!-- ============================================================
+       阶段 2-7: JS 模块（按依赖顺序加载，必须在模板之后）
+       1. data.js        — 商品数据
+       2. toast.js       — Toast 事件总线
+       3. store.js       — Pinia 购物车 Store
+       4. components/*   — 页面组件（6 个）
+       5. router.js      — 路由配置
+       6. app.js         — 根组件 + 应用启动
+       ============================================================ -->
+  <script src="js/data.js"></script>
+  <script src="js/toast.js"></script>
+  <script src="js/store.js"></script>
+  <script src="js/components/PromoLabel.js"></script>
+  <script src="js/components/PromoCountdown.js"></script>
+  <script src="js/components/HomePage.js"></script>
+  <script src="js/components/ProductsPage.js"></script>
+  <script src="js/components/ProductDetail.js"></script>
+  <script src="js/components/CartPage.js"></script>
+  <script src="js/components/OrderSuccessPage.js"></script>
+  <script src="js/components/NotFoundPage.js"></script>
+  <script src="js/router.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,401 @@
+{
+  "info": {
+    "name": "电商购物平台 API 测试",
+    "description": "覆盖全部商品接口的正向/异常测试用例",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:3000" }
+  ],
+  "item": [
+    {
+      "name": "【正向】商品查询",
+      "item": [
+        {
+          "name": "TC01-分页查询（默认参数）",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('状态码 200', () => pm.response.to.have.status(200));",
+                  "pm.test('code=200', () => pm.expect(pm.response.json().code).to.eql(200));",
+                  "pm.test('返回 data 数组', () => pm.expect(pm.response.json().data).to.be.an('array'));",
+                  "pm.test('包含分页信息', () => { const j = pm.response.json(); pm.expect(j.page).to.have.property('total'); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/products/query", "host": ["{{baseUrl}}"], "path": ["products", "query"] }
+          }
+        },
+        {
+          "name": "TC02-分页查询（第1页每页3条）",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('pageSize=3', () => pm.expect(pm.response.json().data.length).to.be.at.most(3));",
+                  "pm.test('page=1', () => pm.expect(pm.response.json().page.page).to.eql(1));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/products/query?page=1&pageSize=3", "host": ["{{baseUrl}}"], "path": ["products", "query"], "query": [
+              { "key": "page", "value": "1" }, { "key": "pageSize", "value": "3" }
+            ]}
+          }
+        },
+        {
+          "name": "TC03-关键字搜索",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('匹配蓝牙', () => pm.expect(pm.response.json().data.some(p => p.name.includes('蓝牙'))).to.be.true);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/products/query?keyword=蓝牙", "host": ["{{baseUrl}}"], "path": ["products", "query"], "query": [
+              { "key": "keyword", "value": "蓝牙" }
+            ]}
+          }
+        },
+        {
+          "name": "TC04-单个商品查询",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('返回商品 id=1', () => pm.expect(pm.response.json().data.id).to.eql(1));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/products/1", "host": ["{{baseUrl}}"], "path": ["products", "1"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "【异常】商品查询",
+      "item": [
+        {
+          "name": "TC05-查询不存在的商品",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('状态码 404', () => pm.response.to.have.status(404));",
+                  "pm.test('code=404', () => pm.expect(pm.response.json().code).to.eql(404));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/products/999", "host": ["{{baseUrl}}"], "path": ["products", "999"] }
+          }
+        },
+        {
+          "name": "TC06-ID参数非数字",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('状态码 400', () => pm.response.to.have.status(400));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/products/abc", "host": ["{{baseUrl}}"], "path": ["products", "abc"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "【正向】商品新增",
+      "item": [
+        {
+          "name": "TC07-新增商品",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('状态码 201', () => pm.response.to.have.status(201));",
+                  "pm.test('返回新商品并含 id', () => { const j=pm.response.json(); pm.expect(j.data).to.have.property('id'); pm.expect(j.data.name).to.eql('测试商品'); });",
+                  "pm.collectionVariables.set('newId', pm.response.json().data.id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{baseUrl}}/products/add", "host": ["{{baseUrl}}"], "path": ["products", "add"] },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\":\"测试商品\",\"desc\":\"这是一件测试商品\",\"price\":99.9,\"image\":\"📦\",\"color\":\"#00b894\"}"
+            }
+          }
+        },
+        {
+          "name": "TC08-新增商品（仅必填字段）",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('状态码 201', () => pm.response.to.have.status(201));",
+                  "pm.test('使用默认 image', () => pm.expect(pm.response.json().data.image).to.eql('📦'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{baseUrl}}/products/add", "host": ["{{baseUrl}}"], "path": ["products", "add"] },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\"name\":\"极简商品\",\"price\":50}" }
+          }
+        }
+      ]
+    },
+    {
+      "name": "【异常】商品新增",
+      "item": [
+        {
+          "name": "TC09-缺少名称",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('状态码 400', () => pm.response.to.have.status(400));",
+                  "pm.test('提示名称不能为空', () => pm.expect(pm.response.json().message).to.include('名称'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{baseUrl}}/products/add", "host": ["{{baseUrl}}"], "path": ["products", "add"] },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\"price\":99}" }
+          }
+        },
+        {
+          "name": "TC10-价格为负数",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('状态码 400', () => pm.response.to.have.status(400));",
+                  "pm.test('提示价格错误', () => pm.expect(pm.response.json().message).to.include('价格'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{baseUrl}}/products/add", "host": ["{{baseUrl}}"], "path": ["products", "add"] },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\"name\":\"负价商品\",\"price\":-10}" }
+          }
+        },
+        {
+          "name": "TC11-请求体格式错误",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('状态码 400', () => pm.response.to.have.status(400));",
+                  "pm.test('提示JSON格式错误', () => pm.expect(pm.response.json().message).to.include('JSON'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{baseUrl}}/products/add", "host": ["{{baseUrl}}"], "path": ["products", "add"] },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{这不是合法JSON}" }
+          }
+        }
+      ]
+    },
+    {
+      "name": "【正向】商品更新",
+      "item": [
+        {
+          "name": "TC12-更新商品名称和价格",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('状态码 200', () => pm.response.to.have.status(200));",
+                  "pm.test('名称已变更', () => pm.expect(pm.response.json().data.name).to.eql('无线蓝牙耳机 Pro'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "url": { "raw": "{{baseUrl}}/products/update/1", "host": ["{{baseUrl}}"], "path": ["products", "update", "1"] },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\"name\":\"无线蓝牙耳机 Pro\",\"price\":359}" }
+          }
+        },
+        {
+          "name": "TC13-部分字段更新",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('状态码 200', () => pm.response.to.have.status(200));",
+                  "pm.test('仅描述变更', () => pm.expect(pm.response.json().data.desc).to.eql('已更新描述'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "url": { "raw": "{{baseUrl}}/products/update/1", "host": ["{{baseUrl}}"], "path": ["products", "update", "1"] },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\"desc\":\"已更新描述\"}" }
+          }
+        }
+      ]
+    },
+    {
+      "name": "【异常】商品更新",
+      "item": [
+        {
+          "name": "TC14-更新不存在的商品",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('状态码 404', () => pm.response.to.have.status(404));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "url": { "raw": "{{baseUrl}}/products/update/999", "host": ["{{baseUrl}}"], "path": ["products", "update", "999"] },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\"name\":\"不存在的商品\"}" }
+          }
+        }
+      ]
+    },
+    {
+      "name": "【正向】商品删除",
+      "item": [
+        {
+          "name": "TC15-删除商品",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('状态码 200', () => pm.response.to.have.status(200));",
+                  "pm.test('code=200', () => pm.expect(pm.response.json().code).to.eql(200));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "url": { "raw": "{{baseUrl}}/products/delete/8", "host": ["{{baseUrl}}"], "path": ["products", "delete", "8"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "【异常】商品删除",
+      "item": [
+        {
+          "name": "TC16-删除不存在的商品",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('状态码 404', () => pm.response.to.have.status(404));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "url": { "raw": "{{baseUrl}}/products/delete/999", "host": ["{{baseUrl}}"], "path": ["products", "delete", "999"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "【异常】通用",
+      "item": [
+        {
+          "name": "TC17-访问不存在的接口",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('状态码 404', () => pm.response.to.have.status(404));",
+                  "pm.test('提示接口不存在', () => pm.expect(pm.response.json().message).to.include('接口不存在'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/not-exist", "host": ["{{baseUrl}}"], "path": ["not-exist"] }
+          }
+        }
+      ]
+    }
+  ]
+}
