@@ -1,13 +1,5 @@
 /* ============================================================
-   阶段 5：Vue Router 路由配置
-   使用 Hash 模式，兼容静态文件部署
-   路由表：
-     /                 → HomePage          首页
-     /products         → ProductsPage      全部商品
-     /product/:id      → ProductDetail     商品详情（动态路由）
-     /cart             → CartPage           购物车
-     /order-success    → OrderSuccessPage   下单成功页
-     /:pathMatch(.*)*  → NotFoundPage       404 兜底
+   路由配置 — 含登录守卫
    ============================================================ */
 
 const routes = [
@@ -16,10 +8,21 @@ const routes = [
   { path: '/product/:id',     component: ProductDetail },
   { path: '/cart',            component: CartPage },
   { path: '/order-success',   component: OrderSuccessPage },
+  { path: '/login',           component: LoginPage,    meta: { guest: true } },
+  { path: '/orders',          component: OrderPage,    meta: { auth: true } },
   { path: '/:pathMatch(.*)*', component: NotFoundPage }
 ];
 
 const router = VueRouter.createRouter({
   history: VueRouter.createWebHashHistory(),
   routes
+});
+
+/** 路由守卫 — 未登录访问 /orders → 跳转登录页 */
+router.beforeEach((to, from, next) => {
+  if (to.meta.auth && !auth.isLoggedIn()) {
+    next('/login');
+  } else {
+    next();
+  }
 });

@@ -8,7 +8,7 @@
  */
 
 const request = (() => {
-  const BASE_URL = 'http://localhost:3000';
+  const BASE_URL = 'http://localhost:8080';
   const TIMEOUT = 8000; // 8s 超时
   let _backendOnline = null; // null=未检测, true=在线, false=离线
 
@@ -38,11 +38,20 @@ const request = (() => {
     // 超时控制
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), TIMEOUT);
+    // 自动附带 JWT Token
+    const headers = { 'Content-Type': 'application/json' };
+    const token = localStorage.getItem('token');
+    if (token) headers['Authorization'] = 'Bearer ' + token;
+
     const config = {
-      headers: { 'Content-Type': 'application/json' },
+      headers,
       signal: controller.signal,
       ...options
     };
+    // 合并外部传入的 headers
+    if (options.headers) {
+      config.headers = { ...config.headers, ...options.headers };
+    }
 
     try {
       const res = await fetch(`${BASE_URL}${url}`, config);

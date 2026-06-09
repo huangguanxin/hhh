@@ -15,19 +15,23 @@ const AppRoot = {
   },
 
   computed: {
-    /** 购物车 Store */
-    cartStore() {
-      return useCartStore();
+    cartStore() { return useCartStore(); },
+    isLoggedIn() { return auth.isLoggedIn(); },
+    nickname() { return auth.getUser().nickname || '用户'; }
+  },
+
+  methods: {
+    doLogout() {
+      auth.logout();
+      toast('已退出登录');
+      this.$router.push('/');
     }
   },
 
   mounted() {
-    // 监听 Toast 事件总线，收到消息后加入队列，2.5s 后自动移除
     toastBus.on((msg) => {
       this.toasts.push(msg);
-      setTimeout(() => {
-        this.toasts.shift();
-      }, 2500);
+      setTimeout(() => { this.toasts.shift(); }, 2500);
     });
   }
 };

@@ -9,6 +9,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
@@ -26,14 +27,14 @@ public class OrderController {
         this.orderService = orderService;
     }
 
-    /** 分页查询 */
+    /** 分页查询 — 自动获取当前登录用户 */
     @GetMapping("/query")
     public Result<Page<Order>> query(
             @RequestParam(defaultValue = "1") @Min(1) long page,
             @RequestParam(defaultValue = "10") @Min(1) long pageSize,
-            @RequestParam(required = false) String status,
-            @RequestParam(required = false) Long userId) {
+            @RequestParam(required = false) String status) {
 
+        Long userId = getCurrentUserId();
         Page<Order> result = orderService.queryPage(page, pageSize, status, userId);
         PageInfo info = new PageInfo(page, pageSize, result.getTotal());
         return Result.ok(result.getRecords(), info);
@@ -45,17 +46,23 @@ public class OrderController {
         return Result.ok(orderService.getById(id));
     }
 
-    /** 新增订单 */
+    /** 新增订单 — 用户ID从Token自动获取 */
     @PostMapping("/create")
     public Result<Order> create(@Valid @RequestBody CreateReq req) {
         Order order = new Order();
-        order.setUserId(req.userId);
+        order.setUserId(getCurrentUserId());
         order.setProductId(req.productId);
         order.setProductName(req.productName);
         order.setQuantity(req.quantity);
         order.setUnitPrice(req.unitPrice);
         order.setRemark(req.remark != null ? req.remark : "");
         return Result.ok(orderService.create(order));
+    }
+
+    /** 从 JWT Token 获取当前登录用户 ID */
+    private Long getCurrentUserId() {
+        return (Long) SecurityContextHolder.getContext()
+                .getAuthentication().getPrincipal();
     }
 
     /** 更新订单状态 */
@@ -72,9 +79,8 @@ public class OrderController {
         return Result.ok(null);
     }
 
-    /** 新增请求体 */
+    /** 新增请求体 — userId 由 Token 自动获取 */
     public static class CreateReq {
-        @NotNull public Long userId;
         @NotNull public Long productId;
         @NotBlank public String productName;
         @Min(1) public Integer quantity = 1;

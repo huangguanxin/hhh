@@ -443,6 +443,30 @@ body {
 .page-btn:disabled { opacity: .4; cursor: not-allowed; }
 .page-info { font-size: 13px; color: var(--text-light); margin-left: 12px; }
 
+/* -------- 登录页 -------- */
+.login-card { max-width: 400px; margin: 60px auto; background: var(--card-bg); border-radius: var(--radius); padding: 40px; box-shadow: var(--shadow); text-align: center; }
+.login-card h2 { margin-bottom: 24px; }
+.login-form { display: flex; flex-direction: column; gap: 12px; }
+.login-input { padding: 12px 16px; border: 1px solid var(--border); border-radius: 8px; font-size: 15px; outline: none; }
+.login-input:focus { border-color: var(--primary); }
+.login-error { color: var(--primary); font-size: 13px; margin: 0; }
+
+/* -------- 订单列表 -------- */
+.order-list { display: flex; flex-direction: column; gap: 12px; }
+.order-item { background: var(--card-bg); border-radius: var(--radius); padding: 16px 20px; box-shadow: var(--shadow); }
+.order-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.order-no { font-size: 13px; color: var(--text-light); }
+.order-status { font-size: 12px; padding: 2px 10px; border-radius: 12px; font-weight: 600; }
+.status-PENDING { background: #ffeaa7; color: #d63031; }
+.status-PAID { background: #dfe6e9; color: #2d3436; }
+.status-SHIPPED { background: #74b9ff; color: #fff; }
+.status-COMPLETED { background: #55efc4; color: #2d3436; }
+.status-CANCELLED { background: #fab1a0; color: #d63031; }
+.order-body { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+.order-product { font-size: 15px; font-weight: 600; }
+.order-price { font-size: 18px; font-weight: 700; color: var(--primary); }
+.order-footer { display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: var(--text-light); }
+
 /* ============================================================
    购物车页 (Cart)
    ============================================================ */

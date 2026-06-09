@@ -36,6 +36,9 @@
               {{ cartStore.totalCount }}
             </span>
           </router-link>
+          <router-link to="/orders">📋 订单</router-link>
+          <router-link to="/login" v-if="!isLoggedIn">🔑 登录</router-link>
+          <a href="#" v-else @click.prevent="doLogout">👤 {{ nickname }} ▸</a>
         </div>
       </nav>
 
@@ -317,6 +320,80 @@
     </div>
   </script>
 
+  <!-- 登录页模板 -->
+  <script type="text/x-template" id="tpl-login">
+    <div class="container">
+      <div class="login-card">
+        <h2>🔐 用户登录</h2>
+        <div class="login-form">
+          <input type="text" v-model="username" placeholder="用户名" class="login-input"
+                 @keyup.enter="doLogin">
+          <input type="password" v-model="password" placeholder="密码" class="login-input"
+                 @keyup.enter="doLogin">
+          <p class="login-error" v-if="error">{{ error }}</p>
+          <button class="btn-large" @click="doLogin" :disabled="loading">
+            {{ loading ? '登录中...' : '登录' }}
+          </button>
+          <p style="margin-top:12px;color:var(--text-light);font-size:13px;">
+            测试账号: admin / buyer1 / buyer2，密码均为 123456
+          </p>
+        </div>
+      </div>
+    </div>
+  </script>
+
+  <!-- 订单列表模板 -->
+  <script type="text/x-template" id="tpl-orders">
+    <div class="container">
+      <div class="section-title">📋 我的订单</div>
+
+      <!-- 状态筛选 -->
+      <div class="category-bar">
+        <button
+          v-for="s in statuses" :key="s.key"
+          :class="['btn-category', { active: status === s.key }]"
+          @click="filterStatus(s.key)">{{ s.name }}</button>
+        <span style="margin-left:auto;font-size:13px;color:var(--text-light);">
+          👤 {{ user.nickname }}
+        </span>
+      </div>
+
+      <div class="loading-box" v-if="loading"><div class="spinner"></div><p>加载中...</p></div>
+      <div class="error-box" v-else-if="error"><p>😵 {{ error }}</p><button class="btn-home" @click="fetchOrders">重试</button></div>
+
+      <template v-else>
+        <div v-if="orders.length === 0" class="cart-empty">
+          <div class="cart-empty-icon">📭</div><p>暂无订单</p>
+        </div>
+
+        <div class="order-list" v-else>
+          <div class="order-item" v-for="o in orders" :key="o.id">
+            <div class="order-header">
+              <span class="order-no">📄 {{ o.orderNo }}</span>
+              <span :class="'order-status status-' + o.status">{{ statusText(o.status) }}</span>
+            </div>
+            <div class="order-body">
+              <span class="order-product">{{ o.productName }} × {{ o.quantity }}</span>
+              <span class="order-price">¥{{ o.totalPrice }}</span>
+            </div>
+            <div class="order-footer">
+              <span>{{ o.createTime?.substring(0, 10) || '' }}</span>
+              <button class="btn-sm btn-add" style="width:auto;padding:4px 12px;" @click="addItem(o)">再次购买</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="pagination" v-if="totalPages > 1">
+          <button class="page-btn" :disabled="currentPage<=1" @click="goPage(currentPage-1)">上一页</button>
+          <button v-for="p in pageNumbers" :key="p" :class="['page-btn',{active:p===currentPage}]"
+                  @click="goPage(p)">{{ p }}</button>
+          <button class="page-btn" :disabled="currentPage>=totalPages" @click="goPage(currentPage+1)">下一页</button>
+          <span class="page-info">共 {{ total }} 单 / {{ totalPages }} 页</span>
+        </div>
+      </template>
+    </div>
+  </script>
+
   <!-- ============================================================
        阶段 2-7: JS 模块（按依赖顺序加载，必须在模板之后）
        1. data.js        — 商品数据
@@ -328,6 +405,7 @@
        ============================================================ -->
   <script src="js/data.js"></script>
   <script src="js/toast.js"></script>
+  <script src="js/utils/auth.js"></script>
   <script src="js/utils/request.js"></script>
   <script src="js/api/productApi.js"></script>
   <script src="js/store.js"></script>
@@ -339,6 +417,8 @@
   <script src="js/components/CartPage.js"></script>
   <script src="js/components/OrderSuccessPage.js"></script>
   <script src="js/components/NotFoundPage.js"></script>
+  <script src="js/components/LoginPage.js"></script>
+  <script src="js/components/OrderPage.js"></script>
   <script src="js/router.js"></script>
   <script src="js/app.js"></script>
 </body>
